@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Suporte TI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; min-height: 100vh; }
+
+    header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 1rem 2rem; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 13px; color: #666; }
+
+    .nav { display: flex; gap: 8px; padding: 1.5rem 2rem 0; }
+    .nav button { padding: 10px 20px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #555; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; }
+    .nav button.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 500; }
+    .nav button:hover:not(.active) { background: #f0f0f0; }
+
+    .container { padding: 1.5rem 2rem; max-width: 1100px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .metric { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 1rem 1.25rem; }
+    .metric .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .metric .value { font-size: 26px; font-weight: 600; }
+    .metric .sub { font-size: 12px; color: #888; margin-top: 2px; }
+
+    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; color: #111; }
+    .section-title { font-size: 20px; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-info { background: #dbeafe; color: #1e40af; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 8px 12px; font-weight: 500; font-size: 13px; color: #666; border-bottom: 1px solid #eee; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+
+    .add-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .add-row input, .add-row select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 13px; font-family: inherit; background: #fff; color: #111; }
+    .add-row button { padding: 8px 16px; border-radius: 8px; border: 1px solid #ddd; background: #1a1a1a; color: #fff; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; }
+    .add-row button:hover { background: #333; }
+
+    .btn-remove { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #999; font-family: inherit; }
+    .btn-remove:hover { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .btn-status { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #ddd; background: transparent; cursor: pointer; font-family: inherit; color: #555; }
+    .btn-status:hover { background: #f0f9ff; color: #1e40af; border-color: #93c5fd; }
+    .status-select { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd; font-family: inherit; background: #fff; color: #111; cursor: pointer; }
+
+    .progress-bar { background: #f0f0f0; border-radius: 99px; height: 8px; overflow: hidden; flex: 1; }
+    .progress-fill { height: 100%; border-radius: 99px; background: #059669; transition: width 0.3s; }
+
+    .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+    .check-item:last-child { border-bottom: none; }
+    .check-item input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: #059669; }
+    .check-item label { font-size: 14px; cursor: pointer; flex: 1; color: #111; }
+    .check-item label.done { text-decoration: line-through; color: #aaa; }
+
+    .chat { display: flex; flex-direction: column; gap: 12px; margin-bottom: 1rem; min-height: 220px; }
+    .msg { padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height: 1.6; max-width: 88%; }
+    .msg-user { background: #1a1a1a; color: #fff; align-self: flex-end; border-radius: 10px 10px 2px 10px; }
+    .msg-ai { background: #f5f5f5; color: #111; align-self: flex-start; border: 1px solid #e0e0e0; border-radius: 10px 10px 10px 2px; }
+
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; font-family: inherit; background: #fff; color: #111; }
+    .input-row input:focus { outline: none; border-color: #999; }
+    .input-row button { padding: 10px 18px; border-radius: 8px; border: none; background: #1a1a1a; color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; }
+    .input-row button:hover { background: #333; }
+    .input-row button:disabled { background: #ccc; cursor: not-allowed; }
+
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .prog-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .prog-pct { font-size: 13px; color: #666; min-width: 38px; text-align: right; }
+
+    @media (max-width: 600px) {
+      .nav { padding: 1rem; }
+      .container { padding: 1rem; }
+      header { padding: 1rem; }
+      .add-row input, .add-row select { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:22px">🖥️</span>
+  <div>
+    <h1>Sistema de Suporte TI</h1>
+    <span>Migrações · Checklist · Diagnóstico IA</span>
+  </div>
+</header>
+
+<div class="nav">
+  <button class="active" onclick="showPage('dashboard', this)">
+    📊 Dashboard
+  </button>
+  <button onclick="showPage('checklist', this)">
+    ✅ Checklist
+  </button>
+  <button onclick="showPage('assistente', this)">
+    🤖 Assistente IA
+  </button>
+</div>
+
+<div class="container">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="section-title">
+      📊 Migrações Win10 → Win11
+    </div>
+    <div class="metric-grid" id="metrics"></div>
+    <div class="card">
+      <div class="card-title">🖥️ Máquinas cadastradas</div>
+      <div class="add-row">
+        <input id="inp-nome" placeholder="Nome da máquina (ex: PC-RH-01)" style="width:190px">
+        <input id="inp-usuario" placeholder="Usuário responsável" style="width:160px">
+        <select id="inp-status">
+          <option value="Pendente">Pendente</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Migrado">Migrado</option>
+          <option value="Erro">Erro</option>
+        </select>
+        <button onclick="addMaquina()">➕ Adicionar</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Máquina</th>
+            <th>Usuário</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-maquinas"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div id="page-checklist" class="page">
+    <div class="section-title">✅ Checklist por máquina</div>
+    <div class="add-row">
+      <input id="inp-maquina-check" placeholder="Nome da máquina (ex: PC-PROD-03)" style="width:240px">
+      <button onclick="carregarChecklist()">🔍 Carregar checklist</button>
+    </div>
+    <div id="checklist-area"></div>
+  </div>
+
+  <!-- ASSISTENTE IA -->
+  <div id="page-assistente" class="page">
+    <div class="section-title">🤖 Assistente de diagnóstico</div>
+    <div class="card">
+      <div class="chat" id="chat-msgs">
+        <div class="msg msg-ai">
+          🤖 Olá! Descreva o problema da máquina e vou ajudar a diagnosticar.<br>
+          <span style="color:#888;font-size:13px">Exemplo: "PC não atualiza para Win11, aparece erro 0x8007007f"</span>
+        </div>
+      </div>
+      <div class="input-row">
+        <input id="chat-input" placeholder="Descreva o problema aqui..." onkeydown="if(event.key==='Enter') enviarMsg()">
+        <button id="btn-enviar" onclick="enviarMsg()">➤ Enviar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ======= DADOS INICIAIS =======
+  let maquinas = [
+    { nome: 'PC-RH-01', usuario: 'Ana Lima', status: 'Migrado', data: '10/06/2025' },
+    { nome: 'PC-PROD-03', usuario: 'Carlos Souza', status: 'Em andamento', data: '17/06/2025' },
+    { nome: 'PC-TI-07', usuario: 'João Pedro', status: 'Pendente', data: '-' },
+    { nome: 'PC-FIN-02', usuario: 'Maria Costa', status: 'Erro', data: '15/06/2025' },
+    { nome: 'PC-PROD-11', usuario: 'Fábio Alves', status: 'Migrado', data: '12/06/2025' },
+  ];
+
+  const checklistPadrao = [
+    { id: 'c1', texto: 'Verificar compatibilidade do hardware com Win11 (TPM 2.0, Secure Boot)' },
+    { id: 'c2', texto: 'Fazer backup dos dados do usuário' },
+    { id: 'c3', texto: 'Atualizar BIOS/firmware da máquina' },
+    { id: 'c4', texto: 'Verificar status do McAfee antes da migração' },
+    { id: 'c5', texto: 'Executar Windows Update (Win10 totalmente atualizado)' },
+    { id: 'c6', texto: 'Iniciar assistente de upgrade para Win11' },
+    { id: 'c7', texto: 'Aguardar conclusão da instalação' },
+    { id: 'c8', texto: 'Validar McAfee após migração' },
+    { id: 'c9', texto: 'Testar funcionamento geral do sistema' },
+    { id: 'c10', texto: 'Confirmar migração concluída com o usuário' },
+  ];
+
+  let checkStates = {};
+
+  // ======= NAVEGAÇÃO =======
+  function showPage(p, btn) {
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
+    document.getElementById('page-' + p).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ======= DASHBOARD =======
+  function badgeStatus(s) {
+    const map = { 'Migrado': 'badge-success', 'Em andamento': 'badge-info', 'Pendente': 'badge-warning', 'Erro': 'badge-danger' };
+    return `<span class="badge ${map[s] || 'badge-info'}">${s}</span>`;
+  }
+
+  function renderTabela() {
+    const tbody = document.getElementById('tabela-maquinas');
+    tbody.innerHTML = maquinas.map((m, i) => `
+      <tr>
+        <td><strong>${m.nome}</strong></td>
+        <td>${m.usuario}</td>
+        <td>${badgeStatus(m.status)}</td>
+        <td style="color:#999;font-size:13px">${m.data}</td>
+        <td style="display:flex;gap:6px;align-items:center">
+          <select class="status-select" onchange="changeStatus(${i}, this.value)">
+            <option value="" disabled selected>Alterar status</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Migrado">Migrado</option>
+            <option value="Erro">Erro</option>
+          </select>
+          <button class="btn-remove" onclick="remover(${i})">🗑️</button>
+        </td>
+      </tr>`).join('');
+    renderMetrics();
+  }
+
+  function changeStatus(i, novoStatus) {
+    if (!novoStatus) return;
+    maquinas[i].status = novoStatus;
+    if (novoStatus === 'Migrado') {
+      maquinas[i].data = new Date().toLocaleDateString('pt-BR');
+    }
+    renderTabela();
+  }
+
+  function renderMetrics() {
+    const total = maquinas.length;
+    const migrado = maquinas.filter(m => m.status === 'Migrado').length;
+    const pendente = maquinas.filter(m => m.status === 'Pendente').length;
+    const erro = maquinas.filter(m => m.status === 'Erro').length;
+    const pct = total ? Math.round((migrado / total) * 100) : 0;
+    document.getElementById('metrics').innerHTML = `
+      <div class="metric"><div class="label">Total de máquinas</div><div class="value">${total}</div></div>
+      <div class="metric"><div class="label">Migradas</div><div class="value" style="color:#059669">${migrado}</div><div class="sub">${pct}% concluído</div></div>
+      <div class="metric"><div class="label">Pendentes</div><div class="value" style="color:#d97706">${pendente}</div></div>
+      <div class="metric"><div class="label">Com erro</div><div class="value" style="color:#dc2626">${erro}</div></div>
+    `;
+  }
+
+  function addMaquina() {
+    const nome = document.getElementById('inp-nome').value.trim();
+    const usuario = document.getElementById('inp-usuario').value.trim();
+    const status = document.getElementById('inp-status').value;
+    if (!nome) { alert('Informe o nome da máquina.'); return; }
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    maquinas.push({ nome, usuario: usuario || '-', status, data: hoje });
+    document.getElementById('inp-nome').value = '';
+    document.getElementById('inp-usuario').value = '';
+    renderTabela();
+  }
+
+  function remover(i) {
+    if (confirm(`Remover ${maquinas[i].nome}?`)) {
+      maquinas.splice(i, 1);
+      renderTabela();
+    }
+  }
+
+  // ======= CHECKLIST =======
+  function carregarChecklist() {
+    const nome = document.getElementById('inp-maquina-check').value.trim();
+    if (!nome) { alert('Informe o nome da máquina.'); return; }
+    if (!checkStates[nome]) checkStates[nome] = {};
+    renderChecklist(nome);
+  }
+
+  function renderChecklist(nome) {
+    const done = checklistPadrao.filter(c => checkStates[nome][c.id]).length;
+    const pct = Math.round((done / checklistPadrao.length) * 100);
+    document.getElementById('checklist-area').innerHTML = `
+      <div class="card">
+        <div class="card-title">🖥️ ${nome}</div>
+        <div class="prog-row">
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:${pct}%"></div></div>
+          <span class="prog-pct" id="prog-txt">${pct}%</span>
+        </div>
+        ${checklistPadrao.map(c => `
+          <div class="check-item">
+            <input type="checkbox" id="${nome}-${c.id}" ${checkStates[nome][c.id] ? 'checked' : ''} onchange="toggleCheck('${nome}','${c.id}')">
+            <label for="${nome}-${c.id}" class="${checkStates[nome][c.id] ? 'done' : ''}">${c.texto}</label>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  function toggleCheck(maq, cid) {
+    if (!checkStates[maq]) checkStates[maq] = {};
+    checkStates[maq][cid] = !checkStates[maq][cid];
+    const done = checklistPadrao.filter(c => checkStates[maq][c.id]).length;
+    const pct = Math.round((done / checklistPadrao.length) * 100);
+    const fill = document.getElementById('prog-fill');
+    const txt = document.getElementById('prog-txt');
+    if (fill) fill.style.width = pct + '%';
+    if (txt) txt.textContent = pct + '%';
+    const lbl = document.querySelector(`label[for="${maq}-${cid}"]`);
+    if (lbl) lbl.className = checkStates[maq][cid] ? 'done' : '';
+  }
+
+  // ======= ASSISTENTE IA =======
+  async function enviarMsg() {
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('btn-enviar');
+    const texto = input.value.trim();
+    if (!texto) return;
+    input.value = '';
+    btn.disabled = true;
+
+    const chat = document.getElementById('chat-msgs');
+    chat.innerHTML += `<div class="msg msg-user">${texto}</div>`;
+    chat.innerHTML += `<div class="msg msg-ai" id="msg-loading"><span class="spinner"></span> Analisando o problema...</div>`;
+    chat.scrollTop = chat.scrollHeight;
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: 'Você é um assistente especialista em suporte de TI de infraestrutura. Ajuda a diagnosticar problemas com atualizações do Windows, migração Win10 para Win11, McAfee e redes. Responda em português de forma clara e prática. Use passos numerados quando necessário. Seja objetivo e direto.',
+          messages: [{ role: 'user', content: texto }]
+        })
+      });
+      const data = await resp.json();
+      const resposta = data.content?.map(b => b.text || '').join('') || 'Não consegui obter resposta.';
+      document.getElementById('msg-loading').innerHTML = `🤖 ${resposta.replace(/\n/g, '<br>')}`;
+    } catch (e) {
+      document.getElementById('msg-loading').innerHTML = `⚠️ Erro ao conectar com a IA. Verifique sua conexão.`;
+    }
+
+    btn.disabled = false;
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // ======= INICIALIZAR =======
+  renderTabela();
+</script>
+</body>
+</html>
