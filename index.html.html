@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Suporte TI</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#111;min-height:100vh}
+    #login-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;z-index:9999}
+    #login-box{background:#fff;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    #login-box .logo{font-size:40px;margin-bottom:12px}
+    #login-box h2{font-size:20px;font-weight:700;margin-bottom:4px}
+    #login-box p{font-size:13px;color:#888;margin-bottom:1.5rem}
+    #login-box input{width:100%;padding:12px 14px;border-radius:8px;border:1px solid #ddd;font-size:15px;font-family:inherit;margin-bottom:10px;text-align:center}
+    #login-box input:focus{outline:none;border-color:#1a1a1a}
+    #login-box button{width:100%;padding:12px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+    #login-box button:hover{background:#333}
+    #login-erro{color:#dc2626;font-size:13px;margin-top:10px;display:none}
+    #login-tent{font-size:12px;color:#aaa;margin-top:8px;display:none}
+    #app{display:none}
+    header{background:#1a1a1a;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    header h1{font-size:17px;font-weight:600;color:#fff}
+    header span{font-size:12px;color:#aaa}
+    .hright{display:flex;align-items:center;gap:12px}
+    .huser{font-size:13px;color:#aaa}
+    .btn-out{padding:6px 14px;border-radius:6px;border:1px solid #444;background:transparent;color:#ccc;font-size:13px;cursor:pointer;font-family:inherit}
+    .btn-out:hover{background:#333;color:#fff}
+    .nav{display:flex;gap:8px;padding:1.25rem 2rem 0;flex-wrap:wrap}
+    .nav button{padding:9px 18px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#555;font-size:14px;cursor:pointer;font-family:inherit}
+    .nav button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500}
+    .nav button:hover:not(.active){background:#f0f0f0}
+    .container{padding:1.5rem 2rem;max-width:1100px}
+    .page{display:none}
+    .page.active{display:block}
+    .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+    .metric{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:1rem 1.25rem}
+    .metric .lbl{font-size:12px;color:#888;margin-bottom:6px}
+    .metric .val{font-size:26px;font-weight:600}
+    .metric .sub{font-size:12px;color:#888;margin-top:2px}
+    .card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem}
+    .ctitle{font-size:15px;font-weight:600;margin-bottom:1rem}
+    .stitle{font-size:20px;font-weight:600;margin-bottom:1.25rem}
+    .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500}
+    .bs{background:#d1fae5;color:#065f46}
+    .bw{background:#fef3c7;color:#92400e}
+    .bd{background:#fee2e2;color:#991b1b}
+    .bi{background:#dbeafe;color:#1e40af}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th{text-align:left;padding:8px 12px;font-weight:500;font-size:13px;color:#666;border-bottom:1px solid #eee}
+    td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    .apor{font-size:11px;color:#aaa;margin-top:3px}
+    .arow{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+    .arow input,.arow select{padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:13px;font-family:inherit;background:#fff;color:#111}
+    .arow button{padding:8px 16px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:13px;cursor:pointer;font-family:inherit}
+    .arow button:hover{background:#333}
+    .btn-rm{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;background:transparent;cursor:pointer;color:#999;font-family:inherit}
+    .btn-rm:hover{background:#fee2e2;color:#991b1b}
+    .ssel{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;font-family:inherit;background:#fff;color:#111;cursor:pointer}
+    .prow{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+    .pbar{background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden;flex:1}
+    .pfill{height:100%;border-radius:99px;background:#059669;transition:width .3s}
+    .ppct{font-size:13px;color:#666;min-width:38px;text-align:right}
+    .chk{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5}
+    .chk:last-child{border-bottom:none}
+    .chk input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#059669}
+    .chk label{font-size:14px;cursor:pointer;flex:1}
+    .chk label.done{text-decoration:line-through;color:#aaa}
+    .chat{display:flex;flex-direction:column;gap:12px;margin-bottom:1rem;min-height:220px;max-height:400px;overflow-y:auto}
+    .mu{padding:12px 16px;border-radius:10px 10px 2px 10px;font-size:14px;line-height:1.6;max-width:88%;background:#1a1a1a;color:#fff;align-self:flex-end}
+    .ma{padding:12px 16px;border-radius:10px 10px 10px 2px;font-size:14px;line-height:1.6;max-width:88%;background:#f5f5f5;color:#111;align-self:flex-start;border:1px solid #e0e0e0}
+    .irow{display:flex;gap:8px}
+    .irow input{flex:1;padding:10px 14px;border-radius:8px;border:1px solid #ddd;font-size:14px;font-family:inherit}
+    .irow input:focus{outline:none;border-color:#999}
+    .irow button{padding:10px 18px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;font-size:14px;cursor:pointer;font-family:inherit}
+    .irow button:disabled{background:#ccc;cursor:not-allowed}
+    .rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:1.5rem}
+    .rc{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:1.25rem;text-align:center}
+    .rc.dest{border:2px solid #059669}
+    .rc .em{font-size:30px;margin-bottom:8px}
+    .rc .nm{font-size:28px;font-weight:700;margin-bottom:4px}
+    .rc .ds{font-size:13px;color:#666}
+    .btn-exp{padding:10px 20px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#111;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:1rem}
+    .btn-exp:hover{background:#f0f0f0}
+    .sync{font-size:12px;color:#aaa;display:flex;align-items:center;margin-bottom:1rem}
+    .dot{width:8px;height:8px;border-radius:50%;background:#059669;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div id="login-box">
+    <div class="logo">🖥️</div>
+    <h2>Sistema de Suporte TI</h2>
+    <p>Acesso restrito — equipe de TI</p>
+    <input type="text" id="inp-login-nome" placeholder="Seu nome (ex: João Pedro)">
+    <input type="password" id="inp-login-senha" placeholder="Senha">
+    <button id="btn-login" onclick="fazerLogin()">🔐 Entrar</button>
+    <div id="login-erro">❌ Verifique seu nome e senha.</div>
+    <div id="login-tent"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div><h1>🖥️ Sistema de Suporte TI</h1><span id="hdata"></span></div>
+    <div class="hright"><span class="huser" id="huser"></span><button class="btn-out" onclick="sair()">🚪 Sair</button></div>
+  </header>
+  <div class="nav">
+    <button class="active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button onclick="showPage('checklist',this)">✅ Checklist</button>
+    <button onclick="showPage('assistente',this)">🤖 Assistente</button>
+    <button onclick="showPage('relatorio',this)">📋 Relatório</button>
+  </div>
+  <div class="container">
+
+    <div id="page-dashboard" class="page active">
+      <div class="stitle">📊 Migrações Win10 → Win11</div>
+      <div class="sync"><span class="dot"></span>Sincronizando em tempo real</div>
+      <div class="mgrid" id="metrics"></div>
+      <div class="card">
+        <div class="ctitle">🖥️ Máquinas cadastradas</div>
+        <div class="arow">
+          <input id="inp-maq" placeholder="Nome da máquina (ex: PC-RH-01)" style="width:190px">
+          <input id="inp-usr" placeholder="Usuário responsável" style="width:160px">
+          <select id="inp-sts">
+            <option value="Pendente">Pendente</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Migrado">Migrado</option>
+            <option value="Erro">Erro</option>
+          </select>
+          <button onclick="addMaquina()">➕ Adicionar</button>
+        </div>
+        <table>
+          <thead><tr><th>Máquina</th><th>Usuário</th><th>Status</th><th>Data</th><th>Alterado por</th><th>Ações</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-checklist" class="page">
+      <div class="stitle">✅ Checklist por máquina</div>
+      <div class="arow">
+        <input id="inp-chk-maq" placeholder="Nome da máquina" style="width:240px">
+        <button onclick="carregarChecklist()">🔍 Carregar</button>
+      </div>
+      <div id="chk-area"></div>
+    </div>
+
+    <div id="page-assistente" class="page">
+      <div class="stitle">🤖 Assistente de diagnóstico</div>
+      <div class="card">
+        <div class="chat" id="chat">
+          <div class="ma">🤖 Olá! Sou o assistente <strong>offline</strong>.<br><br>Descreva o problema e vou sugerir os passos de solução.<br><br><span style="color:#888;font-size:13px">Ex: "erro 0x8007007f" · "McAfee não atualiza" · "PC lento" · "sem rede" · "conta bloqueada no AD"</span></div>
+        </div>
+        <div class="irow">
+          <input id="chat-inp" placeholder="Descreva o problema..." onkeydown="if(event.key==='Enter')enviarMsg()">
+          <button id="btn-send" onclick="enviarMsg()">➤ Enviar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-relatorio" class="page">
+      <div class="stitle">📋 Relatório de migrações</div>
+      <div class="rgrid" id="rcards"></div>
+      <div class="card"><div class="ctitle">📅 Migradas hoje</div><div id="rhoje"></div></div>
+      <div class="card"><div class="ctitle">⚠️ Com erro</div><div id="rerro"></div></div>
+      <button class="btn-exp" onclick="exportarExcel()">📥 Exportar Excel (.xlsx)</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var maquinas = [];
+var checkStates = {};
+var nomeUsuario = "";
+var tentativas = 0;
+var bloqueado = false;
+var db = null;
+
+var SENHA_HASH = btoa("ItSystem" + "salt2025ti");
+
+var checklistPadrao = [
+  {id:"c1",texto:"Verificar compatibilidade (TPM 2.0 e Secure Boot)"},
+  {id:"c2",texto:"Fazer backup dos dados do usuário"},
+  {id:"c3",texto:"Atualizar BIOS/firmware da máquina"},
+  {id:"c4",texto:"Verificar status do McAfee antes da migração"},
+  {id:"c5",texto:"Executar Windows Update (Win10 totalmente atualizado)"},
+  {id:"c6",texto:"Iniciar assistente de upgrade para Win11"},
+  {id:"c7",texto:"Aguardar conclusão da instalação"},
+  {id:"c8",texto:"Validar McAfee após migração"},
+  {id:"c9",texto:"Testar funcionamento geral do sistema"},
+  {id:"c10",texto:"Confirmar migração concluída com o usuário"}
+];
+
+function iniciarSistema() {
+  var cfg = {
+    apiKey: "AIzaSyCrhqhdkqg6dWaC_yW9QCb-w9W5D-G7-OM",
+    authDomain: "sistema-ti0.firebaseapp.com",
+    databaseURL: "https://sistema-ti0-default-rtdb.firebaseio.com",
+    projectId: "sistema-ti0",
+    storageBucket: "sistema-ti0.firebasestorage.app",
+    messagingSenderId: "50256747852",
+    appId: "1:50256747852:web:229d872a7635330f0603e9"
+  };
+  if (!window._modoOffline) {
+    firebase.initializeApp(cfg);
+    db = firebase.database();
+  }
+  if (sessionStorage.getItem("ti-auth") === SENHA_HASH) {
+    nomeUsuario = sessionStorage.getItem("ti-nome") || "Técnico";
+    abrirApp();
+  }
+}
+
+window.onload = function() {
+  iniciarSistema();
+};
+
+function hashSenha(s) { return btoa(s + "salt2025ti"); }
+
+function fazerLogin() {
+  if (bloqueado) return;
+  var nome = document.getElementById("inp-login-nome").value.trim();
+  var senha = document.getElementById("inp-login-senha").value;
+  var erro = document.getElementById("login-erro");
+  var tent = document.getElementById("login-tent");
+  if (!nome) { erro.style.display="block"; erro.textContent="❌ Informe seu nome."; return; }
+  if (hashSenha(senha) === SENHA_HASH) {
+    nomeUsuario = nome;
+    sessionStorage.setItem("ti-auth", SENHA_HASH);
+    sessionStorage.setItem("ti-nome", nome);
+    erro.style.display = "none";
+    tent.style.display = "none";
+    abrirApp();
+  } else {
+    tentativas++;
+    erro.style.display = "block";
+    erro.textContent = "❌ Senha incorreta.";
+    document.getElementById("inp-login-senha").value = "";
+    tent.style.display = "block";
+    if (tentativas >= 3) {
+      bloqueado = true;
+      tent.textContent = "🔒 Bloqueado por 30 segundos.";
+      document.getElementById("btn-login").disabled = true;
+      setTimeout(function() {
+        bloqueado = false; tentativas = 0;
+        document.getElementById("btn-login").disabled = false;
+        tent.style.display = "none";
+      }, 30000);
+    } else {
+      tent.textContent = "Tentativa " + tentativas + " de 3";
+    }
+  }
+}
+
+function abrirApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  document.getElementById("hdata").textContent = new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+  document.getElementById("huser").textContent = "👤 " + nomeUsuario;
+  if (db) {
+    db.ref("maquinas").on("value", function(snap) {
+      var val = snap.val();
+      maquinas = val ? Object.values(val) : [];
+      renderTabela();
+      renderRelatorio();
+    });
+    db.ref("checks").on("value", function(snap) {
+      checkStates = snap.val() || {};
+    });
+  } else {
+    // Modo offline — usa localStorage
+    try { var m=localStorage.getItem("ti-maquinas"); if(m) maquinas=JSON.parse(m); } catch(e){}
+    try { var c=localStorage.getItem("ti-checks"); if(c) checkStates=JSON.parse(c); } catch(e){}
+    renderTabela();
+    renderRelatorio();
+    var sync = document.querySelector(".sync");
+    if (sync) sync.innerHTML = "⚠️ Modo offline — dados salvos localmente";
+  }
+}
+
+function sair() {
+  if (confirm("Deseja sair?")) {
+    sessionStorage.removeItem("ti-auth");
+    sessionStorage.removeItem("ti-nome");
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("inp-login-senha").value = "";
+    document.getElementById("inp-login-nome").value = "";
+    document.getElementById("login-erro").style.display = "none";
+  }
+}
+
+function salvarMaquinas() {
+  if (db) {
+    db.ref("maquinas").set(maquinas.length ? maquinas : null);
+  } else {
+    localStorage.setItem("ti-maquinas", JSON.stringify(maquinas));
+    renderTabela(); renderRelatorio();
+  }
+}
+function salvarChecks() {
+  if (db) {
+    db.ref("checks").set(Object.keys(checkStates).length ? checkStates : null);
+  } else {
+    localStorage.setItem("ti-checks", JSON.stringify(checkStates));
+  }
+}
+
+function showPage(p, btn) {
+  document.querySelectorAll(".page").forEach(function(el){el.classList.remove("active");});
+  document.querySelectorAll(".nav button").forEach(function(el){el.classList.remove("active");});
+  document.getElementById("page-"+p).classList.add("active");
+  btn.classList.add("active");
+  if (p === "relatorio") renderRelatorio();
+}
+
+function badgeStatus(s) {
+  var m = {"Migrado":"bs","Em andamento":"bi","Pendente":"bw","Erro":"bd"};
+  return "<span class='badge "+(m[s]||"bi")+"'>"+s+"</span>";
+}
+
+function renderTabela() {
+  var tbody = document.getElementById("tbody");
+  if (!tbody) return;
+  if (!maquinas.length) {
+    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:#aaa;padding:2rem'>Nenhuma máquina cadastrada.</td></tr>";
+  } else {
+    tbody.innerHTML = maquinas.map(function(m,i) {
+      var ap = m.alteradoPor ? "<div class='apor'>✏️ "+m.alteradoPor+" — "+m.alteradoEm+"</div>" : "<span style='color:#ddd;font-size:12px'>—</span>";
+      return "<tr><td><strong>"+m.nome+"</strong></td><td>"+m.usuario+"</td><td>"+badgeStatus(m.status)+"</td><td style='color:#999;font-size:13px'>"+m.data+"</td><td>"+ap+"</td><td style='display:flex;gap:6px;align-items:center'><select class='ssel' onchange='changeStatus("+i+",this.value)'><option value='' disabled selected>Alterar</option><option>Pendente</option><option>Em andamento</option><option>Migrado</option><option>Erro</option></select><button class='btn-rm' onclick='remover("+i+")'>🗑️</button></td></tr>";
+    }).join("");
+  }
+  renderMetrics();
+}
+
+function renderMetrics() {
+  var total=maquinas.length,
+      mig=maquinas.filter(function(m){return m.status==="Migrado";}).length,
+      pend=maquinas.filter(function(m){return m.status==="Pendente";}).length,
+      erro=maquinas.filter(function(m){return m.status==="Erro";}).length,
+      pct=total?Math.round((mig/total)*100):0;
+  document.getElementById("metrics").innerHTML=
+    "<div class='metric'><div class='lbl'>Total</div><div class='val'>"+total+"</div></div>"+
+    "<div class='metric'><div class='lbl'>Migradas</div><div class='val' style='color:#059669'>"+mig+"</div><div class='sub'>"+pct+"%</div></div>"+
+    "<div class='metric'><div class='lbl'>Pendentes</div><div class='val' style='color:#d97706'>"+pend+"</div></div>"+
+    "<div class='metric'><div class='lbl'>Com erro</div><div class='val' style='color:#dc2626'>"+erro+"</div></div>";
+}
+
+function addMaquina() {
+  var nome=document.getElementById("inp-maq").value.trim();
+  var usr=document.getElementById("inp-usr").value.trim();
+  var sts=document.getElementById("inp-sts").value;
+  if (!nome){alert("Informe o nome da máquina.");return;}
+  var agora=new Date();
+  maquinas.push({nome:nome,usuario:usr||"-",status:sts,data:agora.toLocaleDateString("pt-BR"),alteradoPor:nomeUsuario,alteradoEm:agora.toLocaleString("pt-BR")});
+  document.getElementById("inp-maq").value="";
+  document.getElementById("inp-usr").value="";
+  salvarMaquinas();
+}
+
+function remover(i) {
+  if (confirm("Remover "+maquinas[i].nome+"?")) {
+    maquinas.splice(i,1);
+    salvarMaquinas();
+  }
+}
+
+function changeStatus(i, s) {
+  if (!s) return;
+  var agora=new Date();
+  maquinas[i].status=s;
+  maquinas[i].alteradoPor=nomeUsuario;
+  maquinas[i].alteradoEm=agora.toLocaleString("pt-BR");
+  if (s==="Migrado") maquinas[i].data=agora.toLocaleDateString("pt-BR");
+  salvarMaquinas();
+}
+
+function carregarChecklist() {
+  var nome=document.getElementById("inp-chk-maq").value.trim();
+  if (!nome){alert("Informe o nome da máquina.");return;}
+  if (!checkStates[nome]) checkStates[nome]={};
+  var estado=checkStates[nome];
+  var done=checklistPadrao.filter(function(c){return estado[c.id];}).length;
+  var pct=Math.round((done/checklistPadrao.length)*100);
+  var html="<div class='card'><div class='ctitle'>🖥️ "+nome+"</div><div class='prow'><div class='pbar'><div class='pfill' id='pfill' style='width:"+pct+"%'></div></div><span class='ppct' id='ppct'>"+pct+"%</span></div>";
+  checklistPadrao.forEach(function(c){
+    html+="<div class='chk'><input type='checkbox' id='"+nome+"-"+c.id+"' "+(estado[c.id]?"checked":"")+" onchange=\"toggleCheck('"+nome+"','"+c.id+"')\"><label for='"+nome+"-"+c.id+"' class='"+(estado[c.id]?"done":"")+"'>"+c.texto+"</label></div>";
+  });
+  html+="</div>";
+  document.getElementById("chk-area").innerHTML=html;
+}
+
+function toggleCheck(maq, cid) {
+  if (!checkStates[maq]) checkStates[maq]={};
+  checkStates[maq][cid]=!checkStates[maq][cid];
+  salvarChecks();
+  var done=checklistPadrao.filter(function(c){return checkStates[maq][c.id];}).length;
+  var pct=Math.round((done/checklistPadrao.length)*100);
+  var f=document.getElementById("pfill"),t=document.getElementById("ppct");
+  if(f)f.style.width=pct+"%";
+  if(t)t.textContent=pct+"%";
+  var l=document.querySelector("label[for='"+maq+"-"+cid+"']");
+  if(l)l.className=checkStates[maq][cid]?"done":"";
+}
+
+var diags=[
+  {p:["0x8007007f","0x80070070","0x8007001f","erro migr","falha migr","nao migra","não migra"],r:"❌ <strong>Erro na migração Win11</strong><br><br>1. Instale todas as atualizações do Win10<br>2. Verifique compatibilidade com PC Health Check (TPM 2.0 + Secure Boot)<br>3. Libere 64GB de espaço<br>4. Desative McAfee temporariamente<br>5. Use o Installation Assistant da Microsoft"},
+  {p:["tpm","secure boot","bios","uefi","compatib"],r:"🔧 <strong>TPM / Secure Boot</strong><br><br>1. Reinicie e entre na BIOS (Del, F2 ou F10)<br>2. Ative TPM ou PTT<br>3. Ative Secure Boot (modo UEFI)<br>4. Salve e reinicie<br><br>💡 Dell: F2 | HP: F10 | Lenovo: F1"},
+  {p:["mcafee","antivirus","antivírus","edr","endpoint"],r:"🛡️ <strong>Problema com McAfee</strong><br><br>1. Verifique agente no ePO<br>2. No PC: McAfee → Atualizar agora<br>3. Se corrompido: desinstale com MCPR Tool<br>4. Reinstale pelo servidor ePO"},
+  {p:["lento","devagar","travando","trava","performance"],r:"🐢 <strong>PC lento</strong><br><br>1. Abra Gerenciador de Tarefas (Ctrl+Shift+Esc)<br>2. Desative programas na inicialização<br>3. Execute: sfc /scannow como administrador<br>4. Verifique se McAfee está em varredura"},
+  {p:["rede","internet","wifi","wi-fi","sem conexao","sem conexão","ping","dns"],r:"🌐 <strong>Problema de rede</strong><br><br>1. ipconfig /release → /flushdns → /renew<br>2. ping 8.8.8.8 e ping google.com<br>3. Atualize driver de rede<br>4. Teste cabo em outra máquina"},
+  {p:["impressora","imprimir","spooler"],r:"🖨️ <strong>Impressora</strong><br><br>1. Reinicie Spooler em services.msc<br>2. Limpe C:\\Windows\\System32\\spool\\PRINTERS\\<br>3. Reinstale a impressora"},
+  {p:["disco","espaco","espaço","armazenamento","cheio"],r:"💾 <strong>Disco cheio</strong><br><br>1. Execute cleanmgr<br>2. Delete pasta Windows.old (até 30GB)<br>3. Use WinDirStat para mapear espaço"},
+  {p:["senha","bloqueado","login","acesso","active directory"],r:"🔐 <strong>Acesso / Senha</strong><br><br>1. Verifique conta no Active Directory<br>2. Desmarque Conta bloqueada<br>3. Redefina a senha<br>4. Verifique conexão com domínio"},
+  {p:["driver","dispositivo","amarelo","desconhecido"],r:"⚙️ <strong>Problema de driver</strong><br><br>1. Abra devmgmt.msc<br>2. Localize dispositivo com ! amarelo<br>3. Clique direito → Atualizar driver"}
+];
+
+function enviarMsg() {
+  var inp=document.getElementById("chat-inp"),btn=document.getElementById("btn-send");
+  var txt=inp.value.trim(); if(!txt)return;
+  inp.value=""; btn.disabled=true;
+  var chat=document.getElementById("chat");
+  chat.innerHTML+="<div class='mu'>"+txt+"</div>";
+  chat.scrollTop=chat.scrollHeight;
+  setTimeout(function(){
+    var t=txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    var r="🤖 Não encontrei diagnóstico específico. Detalhe o problema.<br><br>Sei ajudar com: <strong>migração Win11, TPM/BIOS, McAfee, rede, impressora, disco, senha/AD, drivers, performance.</strong>";
+    for(var i=0;i<diags.length;i++){
+      if(diags[i].p.some(function(p){return t.includes(p.normalize("NFD").replace(/[\u0300-\u036f]/g,""));})){r=diags[i].r;break;}
+    }
+    chat.innerHTML+="<div class='ma'>"+r+"</div>";
+    btn.disabled=false; chat.scrollTop=chat.scrollHeight;
+  },600);
+}
+
+function renderRelatorio() {
+  var hoje=new Date().toLocaleDateString("pt-BR");
+  var mhoje=maquinas.filter(function(m){return m.status==="Migrado"&&m.data===hoje;});
+  var mtotal=maquinas.filter(function(m){return m.status==="Migrado";});
+  var pend=maquinas.filter(function(m){return m.status==="Pendente";});
+  var erros=maquinas.filter(function(m){return m.status==="Erro";});
+  var pct=maquinas.length?Math.round((mtotal.length/maquinas.length)*100):0;
+  var el=document.getElementById("rcards"); if(!el)return;
+  el.innerHTML="<div class='rc dest'><div class='em'>✅</div><div class='nm' style='color:#059669'>"+mhoje.length+"</div><div class='ds'>Migradas hoje</div></div>"+
+    "<div class='rc'><div class='em'>📊</div><div class='nm'>"+pct+"%</div><div class='ds'>Progresso total</div></div>"+
+    "<div class='rc'><div class='em'>⏳</div><div class='nm' style='color:#d97706'>"+pend.length+"</div><div class='ds'>Pendentes</div></div>"+
+    "<div class='rc'><div class='em'>⚠️</div><div class='nm' style='color:#dc2626'>"+erros.length+"</div><div class='ds'>Com erro</div></div>";
+  var hel=document.getElementById("rhoje");
+  if(hel)hel.innerHTML=mhoje.length?"<table><thead><tr><th>Máquina</th><th>Usuário</th><th>Alterado por</th><th>Data</th></tr></thead><tbody>"+mhoje.map(function(m){return"<tr><td><strong>"+m.nome+"</strong></td><td>"+m.usuario+"</td><td>"+(m.alteradoPor||"—")+"</td><td>"+m.data+"</td></tr>";}).join("")+"</tbody></table>":"<p style='color:#aaa;font-size:14px;padding:8px 0'>Nenhuma migração hoje ainda.</p>";
+  var eel=document.getElementById("rerro");
+  if(eel)eel.innerHTML=erros.length?"<table><thead><tr><th>Máquina</th><th>Usuário</th><th>Alterado por</th><th>Data</th></tr></thead><tbody>"+erros.map(function(m){return"<tr><td><strong>"+m.nome+"</strong></td><td>"+m.usuario+"</td><td>"+(m.alteradoPor||"—")+"</td><td>"+m.data+"</td></tr>";}).join("")+"</tbody></table>":"<p style='color:#aaa;font-size:14px;padding:8px 0'>✅ Nenhuma máquina com erro.</p>";
+}
+
+function exportarExcel() {
+  var hoje=new Date().toLocaleDateString("pt-BR");
+  var mhoje=maquinas.filter(function(m){return m.status==="Migrado"&&m.data===hoje;});
+  var mtotal=maquinas.filter(function(m){return m.status==="Migrado";});
+  var erros=maquinas.filter(function(m){return m.status==="Erro";});
+  var pend=maquinas.filter(function(m){return m.status==="Pendente";});
+  var pct=maquinas.length?Math.round((mtotal.length/maquinas.length)*100)+"%":"0%";
+  var wb=XLSX.utils.book_new();
+  var ws1=XLSX.utils.aoa_to_sheet([["Máquina","Usuário","Status","Data","Alterado por","Horário"]].concat(maquinas.map(function(m){return[m.nome,m.usuario,m.status,m.data,m.alteradoPor||"—",m.alteradoEm||"—"];})));
+  ws1["!cols"]=[{wch:18},{wch:20},{wch:15},{wch:14},{wch:20},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,"Todas as Máquinas");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Máquina","Usuário","Alterado por","Data"]].concat(mhoje.length?mhoje.map(function(m){return[m.nome,m.usuario,m.alteradoPor||"—",m.data];}):[["-","","",""]])), "Migradas Hoje");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Máquina","Usuário","Alterado por","Data"]].concat(erros.length?erros.map(function(m){return[m.nome,m.usuario,m.alteradoPor||"—",m.data];}):[["-","","",""]])), "Com Erro");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Indicador","Qtd"],["Total",maquinas.length],["Migradas hoje",mhoje.length],["Migradas total",mtotal.length],["Pendentes",pend.length],["Com erro",erros.length],["Progresso",pct],["Gerado em",hoje]]), "Resumo");
+  XLSX.writeFile(wb,"relatorio-ti-"+hoje.replace(/\//g,"-")+".xlsx");
+}
+</script>
+</body>
+</html>
